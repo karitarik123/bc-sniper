@@ -77,7 +77,7 @@ local State = { cooldowns = {}, queue = {}, buffer = "", collectedCount = 0, isW
 -- =====================================================================================
 -- AYARLAR
 -- =====================================================================================
-local BLOB_URL = "https://api.npoint.io/303d6a2b4478b066485e"
+local BLOB_URL = "https://api.npoint.io/f4a4ff23fa8736e03c8d"
 local ANNOUNCE_URL = "https://api.npoint.io/7f1ba4c97e06ce1dd978"
 local authFile = "bc_sniper_auth.txt"
 local geminiFile = "bc_gemini_key.txt"

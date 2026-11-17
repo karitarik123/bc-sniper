@@ -792,23 +792,16 @@ local function SolveRiddle(text)
 		contents = { { parts = { { text = prompt } } } },
 		tools = { { google_search = {} } } -- Google Arama özelliğini aktif et
 	}
-	
-	-- ✅ DÜZELTME: req fonksiyonunun gerçekten fonksiyon olup olmadığını kontrol et
 	local req = request or http_request or (syn and syn.request)
-	if type(req) ~= "function" then 
-		Logger.Log("HTTP request fonksiyonu bulunamadı! Executor desteklemiyor.", "error")
-		return nil 
-	end
+	if not req then return nil end
 
-	-- ✅ DÜZELTME: pcall ile istek at, dönen sonucun tablo olup olmadığını kontrol et
 	local success, res = pcall(req, {
 		Url = url, Method = "POST",
 		Headers = {["Content-Type"]="application/json",["x-goog-api-key"]=activeKey},
 		Body = _HttpService:JSONEncode(body)
 	})
 
-	-- ✅ DÜZELTME: res'in boolean değil, tablo olduğundan emin ol (Hatayı buradan alıyordun)
-	if success and type(res) == "table" and res.StatusCode == 200 then
+	if success and res and res.StatusCode == 200 then
 		local ok, data = pcall(function() return _HttpService:JSONDecode(res.Body) end)
 		if ok and data.candidates and data.candidates[1] then
 			local answer = data.candidates[1].content.parts[1].text
@@ -819,14 +812,8 @@ local function SolveRiddle(text)
 			return answer
 		end
 	else
-		-- Hata durumunda güvenli log
-		local errMsg = "unknown"
-		if type(res) == "table" then
-			errMsg = tostring(res.Body or res.StatusMessage or "unknown")
-		elseif type(res) == "boolean" then
-			errMsg = "Request returned boolean (" .. tostring(res) .. ") - executor hatası"
-		end
-		Logger.Log("Gemini Error! Status: "..tostring(type(res) == "table" and res.StatusCode or "N/A").." | "..tostring(errMsg):sub(1,80), "error")
+		local errBody = (res and res.Body) or "unknown"
+		Logger.Log("Gemini Error! Status: "..tostring(res and res.StatusCode).." | "..tostring(errBody):sub(1,60), "error")
 	end
 	return nil
 end
@@ -1099,72 +1086,6 @@ function Auth.Verify(key)
 end
 
 function Auth.Build()
-	local gui = Instance.new("ScreenGui", _CoreGui)
-	gui.Name = "BCAuth"
-	local f = Instance.new("Frame", gui)
-	f.Size, f.Position, f.BackgroundColor3 = UDim2.new(0,320,0,230), UDim2.new(0.5,-160,0.5,-115), Theme.Bg
-	Instance.new("UICorner", f).CornerRadius = UDim.new(0,10)
-	local stroke = Instance.new("UIStroke", f); stroke.Color = Theme.Accent; stroke.Thickness = 2
-
-	local title = Instance.new("TextLabel", f)
-	title.Size, title.Position, title.BackgroundTransparency, title.Text = UDim2.new(1,-40,0,40), UDim2.new(0,20,0,0), 1, "BC Sniper | Login"
-	title.TextColor3, title.Font, title.TextSize = Theme.Text, Enum.Font.GothamBold, 16
-	title.TextXAlignment = Enum.TextXAlignment.Left
-
-	-- ✅ YENİ: Kapatma (X) Butonu
-	local closeBtn = Instance.new("TextButton", f)
-	closeBtn.Size = UDim2.new(0, 28, 0, 28)
-	closeBtn.Position = UDim2.new(1, -34, 0, 6)
-	closeBtn.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
-	closeBtn.Text = "✕"
-	closeBtn.TextColor3 = Color3.new(1, 1, 1)
-	closeBtn.Font = Enum.Font.GothamBold
-	closeBtn.TextSize = 14
-	closeBtn.AutoButtonColor = false
-	Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
-	closeBtn.MouseButton1Click:Connect(function()
-		gui:Destroy()
-	end)
-
-	local box = Instance.new("TextBox", f)
-	box.Size, box.Position, box.BackgroundColor3, box.PlaceholderText = UDim2.new(1,-40,0,40), UDim2.new(0,20,0,50), Theme.Panel, "POLSEC-XXXX-XXXX"
-	box.TextColor3, box.Font, box.TextSize = Theme.Text, Enum.Font.GothamBold, 14
-	Instance.new("UICorner", box).CornerRadius = UDim.new(0,6)
-
-	local btn = Instance.new("TextButton", f)
-	btn.Size, btn.Position, btn.BackgroundColor3, btn.Text = UDim2.new(1,-40,0,35), UDim2.new(0,20,0,105), Theme.Success, "Verify"
-	btn.Font, btn.TextSize, btn.TextColor3 = Enum.Font.GothamBold, 13, Color3.new(1,1,1)
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
-
-	local st = Instance.new("TextLabel", f)
-	st.Size, st.Position, st.BackgroundTransparency, st.Text = UDim2.new(1,-40,0,40), UDim2.new(0,20,0,150), 1, "Enter your key."
-	st.TextColor3, st.Font, st.TextSize, st.TextWrapped = Theme.TextDim, Enum.Font.Gotham, 11, true
-
-	btn.MouseButton1Click:Connect(function()
-		if btn.Text == "Waiting..." then return end
-		btn.Text = "Waiting..."
-		st.Text = "Checking..." 
-		st.TextColor3 = Color3.fromRGB(241, 196, 15)
-
-		task.spawn(function()
-			local success, ok, msg = pcall(function() return Auth.Verify(box.Text) end)
-			if not success then ok = false msg = "System Error" end
-
-			if ok then
-				SaveAuth(box.Text)
-				st.Text = "✅ Success! Logging in..." 
-				st.TextColor3 = Theme.Success
-				task.wait(1) 
-				gui:Destroy() 
-				Initialize()
-			else
-				st.Text = "❌ " .. tostring(msg) 
-				st.TextColor3 = Theme.Error
-				btn.Text = "Verify"
-			end
-		end)
-	end)
-end
 	local gui = Instance.new("ScreenGui", _CoreGui)
 	gui.Name = "BCAuth"
 	local f = Instance.new("Frame", gui)
